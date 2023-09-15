@@ -1,0 +1,96 @@
+> Import the assets and the package of number wizard console game. Remove the gameplay object, and everything except the buttons and also change the text on the buttons as per your wish. Select the blue rocket background and set its pixels per unit to 90. In the sprite editor, set the setting that says center to bottom left (pivot). Apply the changes and then move the camera such that its border are around the sprite which you dragged in the hierarchy.
+
+> Add the sprites of paddle, ball and block in the hierarchy and set the pixels per unit to 128 for block and paddle and 256 for ball and set the order layer of these 3 to 1 as that of the background is 0.
+
+> Add a rigid body and circle collider to the ball and add a box collider to the block. Also go to create and 2D and physics material 2d and add a material and name it bounce and set it in the material section of the ball sprite in its rigid body collider.
+
+> Add a polygon collider to the paddle and set its shape. Now create an empty game object and name it lose collider and give a box collider as its component and set it as a long rectangle under the paddle outside the camera and set it as a trigger. Make a script named LoseCollider and in it create a private void OnTriggerEnter and in it write SceneManager.LoadScene("Game Over") i.e. name of the scene that is to be displayed when the ball goes below paddle and the player loses. For this you need to add UnityEngine.SceneManagement namespace. It is better to give the number of the scene according to the build settings index number but if you are sure that you will not change the name of the scene then you can give a string reference.
+
+> Now create a script named Paddle and add it as component in the paddle gameObject. In its Update method make a float named mousePosInUnits and equal it to Input.mousePosition.x / Screen.width * screenWidth. Here screenWidth is a serialized field that we set to 16.
+
+> Below it make a Vector2 variable and name it paddlePos and write:
+Vector2 paddlePos = new Vector2 (transform.position.x, transform.position.y);
+paddlePos.x = Mathf.Clamp(mousePosInUnits, minX, maxX)
+transform.position = paddlePos;
+This will move the paddle as per the position of the mouse pointer.
+Here minX and maxX are serialized fields that set the left and right limit upto which the collider can go. Here since the screen width is 16 and the length of the collider is 2 so the minX is 1 and the maxX is 15.
+
+> Now at the start of the game we need to stick the ball to the paddle. So in a new script named Ball, make a serialized field of type Paddle and name it paddle. Here the 'Paddle' is the script of the paddle. To set the position of the ball we will make a new Vector2 named paddleToBallVector. In the start method we will equal this vector2 to the position of the ball - the position of the paddle.
+
+> Now we create 2 private void methods, LockBallToPaddle and LaunchOnMouseClick. Now we create another Vector2 named paddlePos and equal it to:
+new Vector2(paddle1.transform.position.x, paddle1.transform.position.y);
+where paddle1 is the name of the paddle we gave in the screen. Also equal the transform.position of the ball to the paddlePos + paddleTBallVector.
+
+> In the second method, we will use an if condition that if(Input.GetMouseButtonDown(0)) then GetComponent<Rigidbody2D>().velocity = new Vector2(rightLaunch, upLaunch).
+This means that when the left click is pressed then the velocity of the ball will be to the right as much as the value of rightLaunch and upwards as the upLaunch and these both are serialized fields and has their values in float.
+
+> Make a bool named lockBall and set it to true and play the methods in the update method only if lockBall is true. In the LaunchOnMouseClick method, make the lockBall false after getting the component.
+
+> Now make an empty game object and name it play space and in it add the background and the lose collider. Now make another empty object in the play space and name it as left wall. Set its right border to the edge of the camera's left edge such that it exactly and completely covers the length of the game area. Do the same for the right and the top wall and add all of them as child in the play space.
+
+> Now make the block we added earlier to double the size of it. Now create a script named block and add it to this block object. In the script, make a method of OnCollisionEnter2D and in there, Destroy(gameObject). Make this block a prefab.
+
+> Now make a level by changing the color of the blocks or rotate them and create a level. Then prefab all the things in the hierarchy except for the Blocks object in which all the blocks of the level are there as its child. In the Game Over scene, delete the scene loader that was initially there and instead of it add the prefab of the same.
+
+> Go to the Play Again Button in the hierarchy there and at the bottom in the OnClick section add the sceneLoader from the Hierarchy and in the functions, select sceneloader and select LoadStartScene. Do the same for the Start Menu scene.
+
+> Now we have to add sound effects, so in the ball game object, add a component named Audio Source and in that add the sound of bounce or click in the audio clip section. Now in the Ball script, add a new OnCollisionEnter2D and in it if the lockBall bool is false i.e. if the game is started then GetComponent<AudioSource>().Play(); which will play the clip when any collision occurs.
+
+> Now to make sounds randomly out of provided sound clips, we have to make an array of sounds. In the Ball script, make a serialized field of type AudioClip[] and name it ballSounds where AudioCip[] is an array. Now in the collisionEnter method make another variable of type AudioClip and name it clip and equal it to
+ballSounds[UnityEngine.Random.Range(0,ballSounds.Length)];
+which means that it will take Random sound from Range(0 to length of the ballSounds array) and the Random is of type UnityEngine.
+
+> Under this just write myAudioSource.PlayOneShot(clip); where myAudioSource is a variable of type AudioSource and it is equaled to GetComponent<AudioSource>(); in the start method. Here the use of PlayOneShot means that the sound which is playing will play completely without being cut off by the next sound. Even if the next sound will play then too the previous sound will be completed.
+
+> Now in the block script make a serialized field of typr AudioClip and name it breakSound. In the collision method before Destroy(gameObject) write:
+AudioSource.PlayClipAtPoint(breakSound, Camera.main.transform.position);
+which means we create an AudioSource and play it at a Point. In the bracket, the first parameter says what we want to play and the second parameter says where we want to play it. So we have to play it where the Audio Listener is which is the camera. So we write Camera.main.transform.psoition.
+
+> Now we create a new empty game object and name it Level and also make a new script of the same name and add it to this object. In the script we make a serialized field and name it breakableBlocks of type int and also make a public void method of name CountBreakableBlocks which will increament the number of the int we created each time this method is called.
+
+> Now in the Block script, we make a variable of type Level and name it level. In the start method of this script, we will equal level to FindObjectOfType<Level>() which will give us access to the Level script and then in the same method we have to call the public method of CountBreakableBlocks by writing level.method name().
+
+> Also in the Collision method, extract method and write the name of this new method as DestroyBlock and after destroy(gameObject) write level.BlockDestroyed()
+
+> In the level script, write a new method named BlockDestroyed and in it decrement the breakableBlocks by 1 and if its number is less than or equal to 0 then call the sceneLoader.LoadNextScene where sceneLoader is a varialble of the same type and is accessed by using FindObjectOfType<SceneLoader>();
+
+> Now make a new game object and name it Game Status and also a script of the same name and add it to the same. In the script, make a serialized field and name it gameSpeed of type float and just before writing the [sf] write [Range(0.1f, 10f)] which will give it a slider in the serialized field and its range will be between 0.1 to 10f.
+
+> In the update method write Time.timeScale = gameSpeed; Also make another serialized field and name it AddToScore. Make it a public method. Write another variable named currentScore of type int equal it to 0. In the new method write it currentScore += pointsPerBlockDestroyed where the latter is a variable of type int and its value is 50.
+
+> Now in the block method make a variable of type GameStatus and name it as scoreCounter and in the start method find its object of type and equal it to this variable. Call this method in the DestroyBlock method at the end as scoreCounter.AddToScore();
+
+> Now in the game status script, make a serialized variable of type TextMeshProUGUI and name it scoreText. Also in the namespace add using TMPro. Make the start method and in there equal scoreText.text to currentScore.ToString(). This will convert the currentScore to string format and display it in the scene. Also add this same line to AddToScore method at the end.
+
+> Import a new asset of font and generate usable font by going in windows and TextMesh Pro and font asset generator. In the Game Canvas, add a new child of type Text Mesh Pro from UI and in it add this font in the font section.
+
+> Now in the game status script we need to make changes such that when we win a level and go to the next level then the previous score is not reset to 0 but the earlier score is continued. So we will create an Awake method above Start and in it we will make an int named gameStatusCount and equal it to FindObjectsOfType<GameStatus>().Length;
+
+> Here this means that all the objects of the type GameStatus will be stored in the gameStatusCount. Now if the value of this is > 1 then gameObject is to destroyed but before that gameObject.SetActive(false) which means it is switched off. Else DontDestroyOnLoad(gameObject). This will mean that if a gamseStatus is already running then a ew one for the next level will not be created and the score will persist.
+
+> Now make a new method named ResetGame and in it write Destroy(gameObject) and call this method in the SceneLoader script in the LoadStartScene method.
+
+> Now import the unity package for particle effect. In the block script, create a method named TriggerSparkles and in it make a variable of type GameObject and name it sparkles and equal it to Instantiate(blockSparklesVFX, transform.position, transform.rotation) where the thing in the bracket is a variable of type GameObject. After this line write Destroy(sparkles, 1f) which means we have to destroy the sparkles after 1 second.
+
+> Now we create another prefab of the block by ctrl+d and name it unbreakable blocks and change its color to grey. In the breakable blocks prefab, go to tags and select add tag and add 2 tags, Breakable and Unbreakable. In the prefab of the breakable blocks, select the tag breakable and in the unbreakable ones, select unbreakable.
+
+> Now in the block script, in the OnCollision method, write, if(tag == "Breakable") then DestroyBlock() which is a method we created earlier. Change the name of the method CountBreakableBlocks to CountBlocks and use this same condition to enclose that too in the start method. Extract this whole method and name it CountBreakableBlocks.
+
+> Now make 2 another serialized field of type int and name it timeHit and maxHits. In the If tag breakable section write timesHit++ before destroying block and put the DestroyBlock method in another if condition that if(timesHit >= maxHits) then DestroyBlock() and extract this part of the unbreakable tag if and make it a new method and name it HandleHits.
+
+> Now in the block script make a new serialized field of type array of Sprites and name it hitSprites: Sprite[] hitSprites; Now in the HandleHits method write an else statement and in it call the method ShowNextHitSprite. In this method, make an int and name it spriteIndex and equal it to timesHit-1 as the array starts form 0. After this write GetComponent<SpriteRenderer>().sprite = hitSprites[spriteIndex];
+
+> Make 2 new prefabs namely 2-hit block and 3-hit blocks and set the parameters of maxHits to 2 and 3 respectively. In the HandleHits add 2 sprites of block breakable 1 and 2 respectively as per the number of maxHits and set their pixels per unit to 128.
+
+> Now in the block script, in the HandleJits method, make a new local int named maxHits = hitSprites.Length + 1 so that the error of going out of index can be prevented.
+
+> Mow we have to stop the problem of our ball going endlessly in a loop. For that we will add a random velocity each time the ball hits the block or walls. So for that we need to make a serialized field and name it randomFactor of type float and set it to 0.5f. Make a variablr of type Rigidbody2d and name it myRigidBody2D. In the start method use GetComponent to access it and swap it in the LaunchOnMouseClick method.
+
+> In the OnCollisionEnter method, make a new variable of type Vector2 and name it velocityTweak and equal it to new Vector2(Random.Range(0f, randomFactor), Random.Range(-randomFactor, 0f));
+This means that the x and y velocity will change randomly between 0f and randomFactor value on collision. Also in the if statement write myRigidBody2D.velocity += velocityTweak. This will prevent the ball from going into a random loop in the game.
+
+> Now in the GameSession script create a new serialized field of type bool and name it isAutoPlayEnabled. Make a new method and name it IsAutoPlayEnabled which is a public bool and returns isAutoPlayEnabled variable.
+
+> In the paddle script, make 2 variables one of type Ball and name it ball and second GameSession by the name gameSession. In the Start method, equal both of them to FindObjectOfType<GameSession or Ball>(). In the update method in the variable of paddlePos.x instead of mousePosInUnits write name of a method named GetXPos.
+
+> Create this method at the bottom which is a private float. In this method, write an if statement that if(gameSession.isAutoPlayEnabled()) then return ball.transform.position.x which is the position of x component of the ball and in the else condition return the earlier parameters of mousePosInUnits which are: Input.mousePosition.x / Screen.width * screenWidth;
